@@ -1,4 +1,5 @@
 import { currentUser } from '@clerk/nextjs/server'
+import Link from 'next/link'
 import {
   MessageSquare,
   FileText,
@@ -64,14 +65,14 @@ export default async function DashboardPage() {
         <h2 className="text-lg font-semibold text-white mb-4">Acciones Rápidas</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {quickActions.map((action) => (
-            <a
+            <Link
               key={action.href}
               href={action.href}
               className="flex items-center gap-3 bg-white/5 border border-white/10 hover:border-violet-500/50 rounded-xl p-4 text-gray-300 hover:text-white transition-all group"
             >
               <action.icon className="h-5 w-5 text-violet-400 group-hover:scale-110 transition-transform" />
               <span>{action.label}</span>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

@@ -1,0 +1,6 @@
+src/app/(dashboard)/ai-chat/page.tsx(3,24): error TS2724: '"@ai-sdk/react"' has no exported member named 'Message'. Did you mean 'UIMessage'?
+src/app/(dashboard)/ai-chat/page.tsx(9,21): error TS2339: Property 'input' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.
+src/app/(dashboard)/ai-chat/page.tsx(9,28): error TS2339: Property 'handleInputChange' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.
+src/app/(dashboard)/ai-chat/page.tsx(9,47): error TS2339: Property 'handleSubmit' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.
+src/app/(dashboard)/ai-chat/page.tsx(9,61): error TS2339: Property 'isLoading' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.
+src/app/(dashboard)/ai-chat/page.tsx(10,5): error TS2353: Object literal may only specify known properties, and 'api' does not exist in type 'UseChatOptions<UIMessage<unknown, UIDataTypes, UITools>>'.
