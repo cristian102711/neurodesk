@@ -1,6 +1,3 @@
-// This is your Prisma schema file.
-// Learn more: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,21 +6,18 @@ datasource db {
   provider = "postgresql"
 }
 
-// MODELOS DE NEGOCIO (NEURODESK)
-
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  name      String?
-  imageUrl  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  subscription Subscription?
+  id           String        @id @default(cuid())
+  clerkId      String        @unique
+  email        String        @unique
+  name         String?
+  imageUrl     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  apiKeys      ApiKey[]
   chats        Chat[]
   generations  Generation[]
-  apiKeys      ApiKey[]
+  subscription Subscription?
   usageLogs    UsageLog[]
 }
 
@@ -37,63 +31,40 @@ model Subscription {
   plan                   Plan      @default(FREE)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum Plan {
-  FREE
-  PRO
-  ENTERPRISE
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Chat {
-  id        String   @id @default(cuid())
-  title     String   @default("New Chat")
+  id        String    @id @default(cuid())
+  title     String    @default("New Chat")
   userId    String
-  model     String   @default("gpt-4o-mini")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages Message[]
+  model     String    @default("gpt-4o-mini")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
 }
 
 model Message {
   id        String   @id @default(cuid())
   chatId    String
   role      Role
-  content   String   @db.Text
+  content   String
   tokens    Int      @default(0)
   createdAt DateTime @default(now())
-
-  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
-}
-
-enum Role {
-  USER
-  ASSISTANT
-  SYSTEM
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
 }
 
 model Generation {
   id        String         @id @default(cuid())
   userId    String
   type      GenerationType
-  prompt    String         @db.Text
-  result    String         @db.Text
+  prompt    String
+  result    String
   tokens    Int            @default(0)
   cost      Float          @default(0)
   createdAt DateTime       @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-enum GenerationType {
-  CHAT
-  SUMMARIZE
-  IMAGE
-  CODE_REVIEW
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ApiKey {
@@ -103,8 +74,7 @@ model ApiKey {
   key       String    @unique
   lastUsed  DateTime?
   createdAt DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UsageLog {
@@ -113,8 +83,26 @@ model UsageLog {
   type   GenerationType
   tokens Int
   date   DateTime       @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum Role {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum GenerationType {
+  CHAT
+  SUMMARIZE
+  IMAGE
+  CODE_REVIEW
 }
