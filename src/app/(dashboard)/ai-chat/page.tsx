@@ -8,7 +8,7 @@ export default function AIChatPage() {
   const [input, setInput] = useState('')
   const { messages, sendMessage, status, error } = useChat({
     api: '/api/chat',
-  })
+  } as Parameters<typeof useChat>[0])
 
   const isLoading = status === 'streaming' || status === 'submitted'
 
@@ -27,14 +27,15 @@ export default function AIChatPage() {
 
   // Extrae el texto de un UIMessage v6 que usa parts[]
   const getMessageText = (m: UIMessage): string => {
-    if (!Array.isArray(m.parts) || m.parts.length === 0) {
-      // fallback por compatibilidad
-      return (m as Record<string, unknown>).content as string || ''
+    if (Array.isArray(m.parts) && m.parts.length > 0) {
+      return m.parts
+        .filter((p) => p.type === 'text')
+        .map((p) => (p as { type: 'text'; text: string }).text)
+        .join('')
     }
-    return m.parts
-      .filter((p) => p.type === 'text')
-      .map((p) => (p as { type: 'text'; text: string }).text)
-      .join('')
+    // fallback: content field (older SDK versions)
+    const content = (m as { content?: string }).content
+    return content ?? ''
   }
 
   // Filtra mensajes que tienen contenido visible (evita step-start vacíos)

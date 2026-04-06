@@ -50,8 +50,21 @@ export default function DashboardLayout({
 
         {/* Perfil del usuario al final del sidebar */}
         <div className="p-4 border-t border-white/10 flex items-center gap-3">
-          <UserButton />
-          <span className="text-gray-400 text-sm">Mi Cuenta</span>
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: 'w-8 h-8',
+                userButtonPopoverCard: 'bg-zinc-900 border border-white/10 shadow-2xl',
+                userButtonPopoverActions: 'bg-zinc-900',
+                userButtonPopoverActionButton: 'text-gray-300 hover:bg-white/5',
+                userButtonPopoverActionButtonText: 'text-gray-300',
+                userButtonPopoverFooter: 'hidden',
+              }
+            }}
+          />
+          <Link href="/settings" className="text-gray-400 hover:text-white text-sm transition-colors">
+            Mi Cuenta
+          </Link>
         </div>
       </aside>
 

@@ -2,6 +2,7 @@ import { streamText } from 'ai'
 import { groq } from '@ai-sdk/groq'
 import { currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { checkApiLimit, increaseApiLimit } from '@/lib/api-limit'
 
 export const maxDuration = 60 // El análisis de código puede ser pesado
 export const dynamic = 'force-dynamic'
@@ -18,6 +19,14 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Ingresa un código válido para revisar.' }), { status: 400 })
     }
 
+    const freeTrial = await checkApiLimit('codeReview')
+    if (!freeTrial) {
+      return new Response(JSON.stringify({ error: 'PLAN_LIMIT_REACHED' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     const result = streamText({
       model: groq('llama-3.3-70b-versatile'),
       system: `Eres un Arquitecto de Software Senior y Experto en Seguridad de Código. 
@@ -29,6 +38,9 @@ export async function POST(req: Request) {
       4. Optimización de rendimiento. 
       Responde en formato Markdown, utiliza bloques de código para mostrar ejemplos mejorados y sé muy constructivo.`,
       prompt: `Lenguaje: ${language}\n\nCódigo a revisar:\n\n\`\`\`${language}\n${code}\n\`\`\``,
+      async onFinish() {
+        await increaseApiLimit('codeReview')
+      }
     })
 
     return result.toTextStreamResponse()

@@ -2,6 +2,7 @@ import { streamText, convertToModelMessages } from 'ai'
 import { groq } from '@ai-sdk/groq'
 import { currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
+import { checkApiLimit, increaseApiLimit } from '@/lib/api-limit'
 
 export const maxDuration = 30
 export const dynamic = 'force-dynamic'
@@ -28,6 +29,14 @@ export async function POST(req: Request) {
       })
     }
 
+    const freeTrial = await checkApiLimit('chat')
+    if (!freeTrial) {
+      return new Response(JSON.stringify({ error: 'PLAN_LIMIT_REACHED' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
     // 3. Convertir UIMessages a ModelMessages (formato que entiende streamText)
     const modelMessages = await convertToModelMessages(messages)
 
@@ -40,6 +49,9 @@ export async function POST(req: Request) {
         'Eres experto en programación, resumen de textos e ideas innovadoras. ' +
         'Siempre respondes de forma clara, directa y estructurada. ' +
         'Te diriges al usuario con un tono amigable, profesional y muy eficiente.',
+      async onFinish() {
+        await increaseApiLimit('chat')
+      }
     })
 
     // 5. Retornar stream en formato UIMessage (compatible con useChat v6)

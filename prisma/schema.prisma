@@ -19,15 +19,15 @@ model User {
   generations  Generation[]
   subscription Subscription?
   usageLogs    UsageLog[]
+  apiLimit     UserApiLimit?
 }
 
 model Subscription {
   id                     String    @id @default(cuid())
   userId                 String    @unique
-  stripeCustomerId       String    @unique
-  stripeSubscriptionId   String?   @unique
-  stripePriceId          String?
-  stripeCurrentPeriodEnd DateTime?
+  mpPreapprovalId        String?   @unique
+  mpPaymentId            String?   @unique
+  mpCurrentPeriodEnd     DateTime?
   plan                   Plan      @default(FREE)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
@@ -86,6 +86,17 @@ model UsageLog {
   user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
+}
+
+model UserApiLimit {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  chatCount       Int      @default(0)
+  summaryCount    Int      @default(0)
+  codeReviewCount Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum Plan {
