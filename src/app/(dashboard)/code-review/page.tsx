@@ -31,7 +31,15 @@ export default function CodeReviewPage() {
       })
 
       if (!res.ok) {
-        const msg = await res.text()
+        let msg = await res.text()
+        try {
+          const json = JSON.parse(msg)
+          if (json.error === 'PLAN_LIMIT_REACHED') {
+            msg = 'Has alcanzado el límite gratuito de tu plan. Mejora a Pro en Configuración para continuar.'
+          } else if (json.error) {
+            msg = json.error
+          }
+        } catch (e) {} // ignore parse error
         setError(msg || 'Error al analizar el código.')
         return
       }

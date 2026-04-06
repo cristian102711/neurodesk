@@ -1,11 +1,12 @@
 'use client'
 
 import { useUser } from '@clerk/nextjs'
+import { UserProfile } from '@clerk/nextjs'
 import {
   Settings, User, CreditCard, Bell, Shield, Sparkles,
-  Mail, Link as LinkIcon, CheckCircle, Edit3, Crown
+  Mail, Link as LinkIcon, CheckCircle, Edit3, Crown, X, Loader2
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
 const tabs = [
@@ -19,10 +20,98 @@ const tabs = [
 export default function SettingsPage() {
   const { user, isLoaded } = useUser()
   const [activeTab, setActiveTab] = useState('profile')
+  const [showEditModal, setShowEditModal] = useState(false)
+  
+  const [limits, setLimits] = useState<{
+    chats: { used: number, total: number },
+    summaries: { used: number, total: number },
+    reviews: { used: number, total: number },
+    isPro: boolean
+  } | null>(null)
+  const [loadingStripe, setLoadingStripe] = useState(false)
+
+  const onSubscribe = async () => {
+    try {
+      setLoadingStripe(true)
+      const res = await fetch('/api/checkout')
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoadingStripe(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'plan') {
+      fetch('/api/limits')
+        .then(async res => {
+          if (!res.ok) throw new Error(await res.text())
+          return res.json()
+        })
+        .then(data => {
+          if (!data.error) setLimits(data)
+          else setLimits({ chats: {used:0, total:10}, summaries: {used:0, total:5}, reviews:{used:0, total:3}, isPro: false })
+        })
+        .catch(err => {
+          console.error('Error fetching limits:', err)
+          setLimits({ chats: {used:0, total:10}, summaries: {used:0, total:5}, reviews:{used:0, total:3}, isPro: false })
+        })
+    }
+  }, [activeTab])
 
   return (
     <div className="min-h-full bg-[#020817] p-4 lg:p-8">
 
+      {/* Modal de edición de perfil */}
+      {showEditModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowEditModal(false) }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+          
+          {/* Modal */}
+          <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl">
+            {/* Header del modal */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10 sticky top-0 bg-zinc-950 z-10">
+              <div className="flex items-center gap-2">
+                <Edit3 className="h-4 w-4 text-violet-400" />
+                <h2 className="text-white font-semibold text-sm">Editar Perfil</h2>
+              </div>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Clerk UserProfile embebido */}
+            <div className="p-4">
+              <UserProfile
+                routing="hash"
+                appearance={{
+                  elements: {
+                    rootBox: 'w-full',
+                    card: 'bg-transparent shadow-none border-none w-full',
+                    navbar: 'hidden',
+                    navbarButtons: 'hidden',
+                    pageScrollBox: 'p-0 pt-2',
+                    page: 'bg-transparent',
+                    formFieldInput: 'bg-white/5 border-white/10 text-white',
+                    formButtonPrimary: 'bg-violet-600 hover:bg-violet-500',
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       {/* Cabecera */}
       <div className="flex items-center gap-4 mb-8">
         <div className="bg-orange-500/20 p-3 rounded-xl border border-orange-500/30">
@@ -87,21 +176,21 @@ export default function SettingsPage() {
                       <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-[#020817]" title="Online" />
                     </div>
 
-                    <a
-                      href="https://accounts.clerk.dev/user"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => setShowEditModal(true)}
                       className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-violet-500/50 hover:bg-violet-500/10 transition-all text-sm font-medium"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                       Editar perfil
-                    </a>
+                    </button>
                   </div>
 
                   {isLoaded && user ? (
                     <>
                       <h2 className="text-xl font-bold text-white">{user.fullName || 'Usuario'}</h2>
-                      <p className="text-gray-500 text-sm mt-0.5">Plan Gratuito · Miembro desde {new Date(user.createdAt!).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}</p>
+                      <p className="text-gray-500 text-sm mt-0.5">
+                        Plan {limits?.isPro ? 'Pro' : 'Gratuito'} · Miembro desde {new Date(user.createdAt!).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}
+                      </p>
                     </>
                   ) : (
                     <div className="space-y-2">
@@ -187,23 +276,32 @@ export default function SettingsPage() {
               <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-white font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-gray-400" /> Plan Actual</h3>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-gray-500/10 border border-gray-500/20 text-gray-400">GRATUITO</span>
+                  {limits?.isPro ? (
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 flex items-center gap-1"><Crown className="h-3 w-3" /> PRO</span>
+                  ) : (
+                    <span className="text-xs font-bold px-3 py-1 rounded-full bg-gray-500/10 border border-gray-500/20 text-gray-400">GRATUITO</span>
+                  )}
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { label: 'Chats', used: 0, total: 10 },
-                    { label: 'Resúmenes', used: 0, total: 5 },
-                    { label: 'Revisiones', used: 0, total: 3 },
-                  ].map(({ label, used, total }) => (
-                    <div key={label} className="bg-white/[0.03] rounded-xl p-4 border border-white/5">
-                      <p className="text-xs text-gray-500 mb-1">{label}</p>
-                      <p className="text-2xl font-bold text-white">{used}<span className="text-gray-600 text-sm font-normal">/{total}</span></p>
-                      <div className="mt-2 h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-violet-500/60 rounded-full" style={{ width: `${(used / total) * 100}%` }} />
+                
+                {!limits ? (
+                  <div className="flex justify-center p-6"><Loader2 className="h-6 w-6 animate-spin text-violet-500" /></div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      { label: 'Chats', used: limits.chats.used, total: limits.chats.total },
+                      { label: 'Resúmenes', used: limits.summaries.used, total: limits.summaries.total },
+                      { label: 'Revisiones', used: limits.reviews.used, total: limits.reviews.total },
+                    ].map(({ label, used, total }) => (
+                      <div key={label} className="bg-white/5 rounded-xl p-4 border border-white/5">
+                        <p className="text-xs text-gray-500 mb-1">{label}</p>
+                        <p className="text-2xl font-bold text-white">{used}<span className="text-gray-600 text-sm font-normal">/{total}</span></p>
+                        <div className="mt-2 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full bg-violet-500/60 rounded-full transition-all duration-1000" style={{ width: `${Math.min((used / total) * 100, 100)}%` }} />
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Upgrade Card */}
@@ -226,8 +324,13 @@ export default function SettingsPage() {
                     </ul>
                   </div>
                 </div>
-                <button className="mt-6 w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-violet-500/20">
-                  Mejorar a Pro — Próximamente
+                <button 
+                  onClick={onSubscribe}
+                  disabled={loadingStripe}
+                  className="mt-6 w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-violet-500/20"
+                >
+                  {loadingStripe && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {limits?.isPro ? 'Administrar Suscripción' : 'Mejorar a Pro'}
                 </button>
               </div>
             </div>
