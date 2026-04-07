@@ -1,9 +1,9 @@
 import { currentUser } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const user = await currentUser()
     if (!user || !user.id || !user.primaryEmailAddress?.emailAddress) {
@@ -19,7 +19,11 @@ export async function GET() {
       return new NextResponse('User not found in DB', { status: 400 })
     }
 
-    const settingsUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings`
+    // Detectar la URL base dinámicamente desde los headers del request
+    const host = req.headers.get('host') || 'localhost:3000'
+    const protocol = host.startsWith('localhost') ? 'http' : 'https'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`
+    const settingsUrl = `${baseUrl}/settings`
 
     // Si ya es PRO y tiene tiempo restante, solo lo mandamos de vuelta a settings
     if (dbUser.subscription?.mpCurrentPeriodEnd && dbUser.subscription.mpCurrentPeriodEnd.getTime() > Date.now()) {
@@ -49,14 +53,16 @@ export async function GET() {
           failure: settingsUrl,
           pending: settingsUrl
         },
-        auto_return: 'approved',
-        external_reference: dbUser.id, // Pasamos el ID de Base de Datos para identificar en el Webhook
+        // auto_return solo funciona con HTTPS en producción, lo omitimos en dev
+        ...(process.env.NODE_ENV === 'production' ? { auto_return: 'approved' as const } : {}),
+        external_reference: dbUser.id,
       }
     })
 
     return new NextResponse(JSON.stringify({ url: response.init_point }))
   } catch (error) {
     console.error('[/api/checkout]', error)
-    return NextResponse.json({ error: 'Internal Error - Verifica la consola de Next.js' }, { status: 500 })
+    const errStr = error instanceof Error ? error.message : JSON.stringify(error)
+    return NextResponse.json({ error: errStr }, { status: 500 })
   }
 }

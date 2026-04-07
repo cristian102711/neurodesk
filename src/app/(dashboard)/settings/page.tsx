@@ -7,6 +7,7 @@ import {
   Mail, Link as LinkIcon, CheckCircle, Edit3, Crown, X, Loader2
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 
 const tabs = [
@@ -19,8 +20,11 @@ const tabs = [
 
 export default function SettingsPage() {
   const { user, isLoaded } = useUser()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('profile')
   const [showEditModal, setShowEditModal] = useState(false)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [verifyingPayment, setVerifyingPayment] = useState(false)
   
   const [limits, setLimits] = useState<{
     chats: { used: number, total: number },
@@ -28,38 +32,67 @@ export default function SettingsPage() {
     reviews: { used: number, total: number },
     isPro: boolean
   } | null>(null)
-  const [loadingStripe, setLoadingStripe] = useState(false)
+  const [loadingCheckout, setLoadingCheckout] = useState(false)
 
   const onSubscribe = async () => {
     try {
-      setLoadingStripe(true)
+      setLoadingCheckout(true)
       const res = await fetch('/api/checkout')
       const data = await res.json()
       if (data.url) {
         window.location.href = data.url
+      } else if (data.error) {
+        alert("Error: " + data.error)
       }
     } catch (error) {
       console.error(error)
     } finally {
-      setLoadingStripe(false)
+      setLoadingCheckout(false)
     }
+  }
+
+  // Verificar pago cuando el usuario vuelve de Mercado Pago
+  useEffect(() => {
+    const paymentId = searchParams.get('payment_id')
+    const status = searchParams.get('status')
+
+    if (paymentId && status === 'approved') {
+      setActiveTab('plan')
+      setVerifyingPayment(true)
+      fetch(`/api/verify-payment?payment_id=${paymentId}&status=${status}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.verified) {
+            setPaymentSuccess(true)
+            // Limpiar los query params de la URL
+            window.history.replaceState({}, '', '/settings')
+          }
+        })
+        .catch(err => console.error('Error verificando pago:', err))
+        .finally(() => setVerifyingPayment(false))
+    }
+  }, [searchParams])
+
+  // Cargar límites cuando se activa la pestaña plan
+  const fetchLimits = () => {
+    fetch('/api/limits')
+      .then(async res => {
+        if (!res.ok) throw new Error(await res.text())
+        return res.json()
+      })
+      .then(data => {
+        if (!data.error) setLimits(data)
+        else setLimits({ chats: {used:0, total:10}, summaries: {used:0, total:5}, reviews:{used:0, total:3}, isPro: false })
+      })
+      .catch(err => {
+        console.error('Error fetching limits:', err)
+        setLimits({ chats: {used:0, total:10}, summaries: {used:0, total:5}, reviews:{used:0, total:3}, isPro: false })
+      })
   }
 
   useEffect(() => {
     if (activeTab === 'plan') {
-      fetch('/api/limits')
-        .then(async res => {
-          if (!res.ok) throw new Error(await res.text())
-          return res.json()
-        })
-        .then(data => {
-          if (!data.error) setLimits(data)
-          else setLimits({ chats: {used:0, total:10}, summaries: {used:0, total:5}, reviews:{used:0, total:3}, isPro: false })
-        })
-        .catch(err => {
-          console.error('Error fetching limits:', err)
-          setLimits({ chats: {used:0, total:10}, summaries: {used:0, total:5}, reviews:{used:0, total:3}, isPro: false })
-        })
+      fetchLimits()
     }
   }, [activeTab])
 
@@ -272,8 +305,24 @@ export default function SettingsPage() {
           {/* ── PLAN ── */}
           {activeTab === 'plan' && (
             <div className="space-y-4">
+              {/* Banner de pago exitoso */}
+              {verifyingPayment && (
+                <div className="bg-violet-500/10 border border-violet-500/30 rounded-2xl p-4 flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                  <p className="text-violet-300 font-medium">Verificando tu pago con Mercado Pago...</p>
+                </div>
+              )}
+              {paymentSuccess && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-400" />
+                  <div>
+                    <p className="text-green-300 font-bold">¡Pago confirmado! 🎉</p>
+                    <p className="text-green-400/70 text-sm">Tu plan Pro está activo por 30 días.</p>
+                  </div>
+                </div>
+              )}
               {/* Card plan actual */}
-              <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6">
+              <div className="bg-white/3 border border-white/10 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-white font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-gray-400" /> Plan Actual</h3>
                   {limits?.isPro ? (
@@ -326,10 +375,10 @@ export default function SettingsPage() {
                 </div>
                 <button 
                   onClick={onSubscribe}
-                  disabled={loadingStripe}
+                  disabled={loadingCheckout}
                   className="mt-6 w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold py-3 rounded-xl transition-all hover:scale-[1.02] shadow-xl shadow-violet-500/20"
                 >
-                  {loadingStripe && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {loadingCheckout && <Loader2 className="h-4 w-4 animate-spin" />}
                   {limits?.isPro ? 'Administrar Suscripción' : 'Mejorar a Pro'}
                 </button>
               </div>
