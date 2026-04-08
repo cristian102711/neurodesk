@@ -1,4 +1,6 @@
 import { UserButton } from '@clerk/nextjs'
+import LogoutButton from '@/components/dashboard/logout-button'
+import { LogOut } from 'lucide-react'
 import Link from 'next/link'
 import {
   LayoutDashboard,
@@ -6,14 +8,18 @@ import {
   FileText,
   Code2,
   Settings,
-  Zap
+  Zap,
+  Image as ImageIcon,
+  Clock
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Panel Principal' },
   { href: '/ai-chat', icon: MessageSquare, label: 'Chat con IA' },
   { href: '/summarizer', icon: FileText, label: 'Resumidor' },
+  { href: '/image-gen', icon: ImageIcon, label: 'Generador Imagen' },
   { href: '/code-review', icon: Code2, label: 'Revisión de Código' },
+  { href: '/history', icon: Clock, label: 'Historial' },
   { href: '/settings', icon: Settings, label: 'Configuración' },
 ]
 
@@ -62,7 +68,9 @@ export default function DashboardLayout({
               }
             }}
           />
-          <Link href="/settings" className="text-gray-400 hover:text-white text-sm transition-colors">
+          {/* Logout button */}
+          <LogoutButton />
+          <Link href="/settings" className="text-gray-400 hover:text-white text-sm transition-colors mt-2">
             Mi Cuenta
           </Link>
         </div>

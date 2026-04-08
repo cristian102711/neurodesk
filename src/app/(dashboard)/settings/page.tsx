@@ -6,7 +6,7 @@ import {
   Settings, User, CreditCard, Bell, Shield, Sparkles,
   Mail, Link as LinkIcon, CheckCircle, Edit3, Crown, X, Loader2
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 
@@ -18,7 +18,21 @@ const tabs = [
   { id: 'apikeys',       label: 'API Keys',         icon: Sparkles },
 ]
 
+// Exported page wraps SettingsContent in Suspense — required by Next.js App Router
+// because useSearchParams() needs a Suspense boundary for static prerendering.
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-full bg-[#020817] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+      </div>
+    }>
+      <SettingsContent />
+    </Suspense>
+  )
+}
+
+function SettingsContent() {
   const { user, isLoaded } = useUser()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState('profile')

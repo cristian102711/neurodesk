@@ -1,20 +1,16 @@
 import { currentUser } from '@clerk/nextjs/server'
 import Link from 'next/link'
+import { getApiLimits } from '@/lib/api-limit'
+import { checkSubscription } from '@/lib/subscription'
 import {
   MessageSquare,
   FileText,
   Code2,
   Image,
   Zap,
-  TrendingUp
+  TrendingUp,
+  Crown
 } from 'lucide-react'
-
-const stats = [
-  { label: 'Chats de IA Hoy', value: '0 / 10', icon: MessageSquare, color: 'text-violet-400' },
-  { label: 'Resúmenes Hoy', value: '0 / 5', icon: FileText, color: 'text-blue-400' },
-  { label: 'Revisiones de Código', value: '0', icon: Code2, color: 'text-green-400' },
-  { label: 'Imágenes Generadas', value: '0', icon: Image, color: 'text-orange-400' },
-]
 
 const quickActions = [
   { label: 'Nuevo Chat IA', href: '/ai-chat', icon: MessageSquare },
@@ -24,6 +20,15 @@ const quickActions = [
 
 export default async function DashboardPage() {
   const user = await currentUser()
+  const apiLimits = await getApiLimits()
+  const isPro = await checkSubscription()
+
+  const stats = [
+    { label: 'Chats de IA Hoy', value: isPro ? 'Ilimitado' : `${apiLimits?.chats.used || 0} / ${apiLimits?.chats.total || 10}`, icon: MessageSquare, color: 'text-violet-400' },
+    { label: 'Resúmenes Hoy', value: isPro ? 'Ilimitado' : `${apiLimits?.summaries.used || 0} / ${apiLimits?.summaries.total || 5}`, icon: FileText, color: 'text-blue-400' },
+    { label: 'Revisiones de Código', value: isPro ? 'Ilimitado' : `${apiLimits?.reviews.used || 0} / ${apiLimits?.reviews.total || 3}`, icon: Code2, color: 'text-green-400' },
+    { label: 'Imágenes Generadas', value: isPro ? 'Ilimitado' : `${apiLimits?.images.used || 0} / ${apiLimits?.images.total || 5}`, icon: Image, color: 'text-orange-400' },
+  ]
 
   return (
     <div className="p-8 space-y-8">
@@ -36,14 +41,22 @@ export default async function DashboardPage() {
       </div>
 
       {/* Banner del plan actual (Free/Pro) */}
-      <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4 flex items-center justify-between">
+      <div className={`border rounded-xl p-4 flex items-center justify-between ${isPro ? 'bg-amber-500/10 border-amber-500/20' : 'bg-violet-500/10 border-violet-500/20'}`}>
         <div className="flex items-center gap-3">
-          <Zap className="h-5 w-5 text-violet-400" />
-          <span className="text-violet-300 font-medium">Estás en el <strong>Plan Gratuito</strong></span>
+          {isPro ? (
+            <Crown className="h-5 w-5 text-amber-400" />
+          ) : (
+            <Zap className="h-5 w-5 text-violet-400" />
+          )}
+          <span className={isPro ? "text-amber-300 font-medium" : "text-violet-300 font-medium"}>
+            Estás en el <strong>{isPro ? "Plan Pro" : "Plan Gratuito"}</strong>
+          </span>
         </div>
-        <button className="bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-1.5 rounded-lg transition-colors">
-          Mejorar a Pro
-        </button>
+        {!isPro && (
+          <Link href="/settings" className="bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-1.5 rounded-lg transition-colors">
+            Mejorar a Pro
+          </Link>
+        )}
       </div>
 
       {/* Tarjetas con métricas principales */}

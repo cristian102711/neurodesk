@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { FileText, Copy, Check, Scissors, Loader2, Sparkles } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 export default function SummarizerPage() {
   const [textToSummarize, setTextToSummarize] = useState('')
@@ -39,7 +40,7 @@ export default function SummarizerPage() {
           } else if (json.error) {
             msg = json.error
           }
-        } catch (e) {}
+        } catch { }
         setError(msg || 'Error al generar el resumen.')
         return
       }
@@ -65,6 +66,7 @@ export default function SummarizerPage() {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(completion)
     setCopied(true)
+    toast.success('¡Resumen copiado al portapapeles!')
     setTimeout(() => setCopied(false), 2000)
   }
 

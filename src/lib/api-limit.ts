@@ -6,14 +6,16 @@ import { checkSubscription } from './subscription'
 export const MAX_FREE_CHATS = 10
 export const MAX_FREE_SUMMARIES = 5
 export const MAX_FREE_REVIEWS = 3
+export const MAX_FREE_IMAGES = 5
 
-export type ApiLimitType = 'chat' | 'summarize' | 'codeReview'
+export type ApiLimitType = 'chat' | 'summarize' | 'codeReview' | 'image'
 
 // Utility to get the current limit based on type
 const getLimitValue = (type: ApiLimitType) => {
   if (type === 'chat') return MAX_FREE_CHATS
   if (type === 'summarize') return MAX_FREE_SUMMARIES
   if (type === 'codeReview') return MAX_FREE_REVIEWS
+  if (type === 'image') return MAX_FREE_IMAGES
   return 0
 }
 
@@ -56,11 +58,14 @@ export async function checkApiLimit(type: ApiLimitType) {
     return true
   }
 
+  console.log('[API LIMIT] userApiLimit found:', userApiLimit)
+
   const limitValue = getLimitValue(type)
 
-  if (type === 'chat' && userApiLimit.chatCount < limitValue) return true
-  if (type === 'summarize' && userApiLimit.summaryCount < limitValue) return true
-  if (type === 'codeReview' && userApiLimit.codeReviewCount < limitValue) return true
+  if (type === 'chat' && (userApiLimit.chatCount || 0) < limitValue) return true
+  if (type === 'summarize' && (userApiLimit.summaryCount || 0) < limitValue) return true
+  if (type === 'codeReview' && (userApiLimit.codeReviewCount || 0) < limitValue) return true
+  if (type === 'image' && (userApiLimit.imageCount || 0) < limitValue) return true
 
   return false // Limit reached
 }
@@ -87,6 +92,7 @@ export async function increaseApiLimit(type: ApiLimitType) {
         chatCount: type === 'chat' ? userApiLimit.chatCount + 1 : userApiLimit.chatCount,
         summaryCount: type === 'summarize' ? userApiLimit.summaryCount + 1 : userApiLimit.summaryCount,
         codeReviewCount: type === 'codeReview' ? userApiLimit.codeReviewCount + 1 : userApiLimit.codeReviewCount,
+        imageCount: type === 'image' ? userApiLimit.imageCount + 1 : userApiLimit.imageCount,
       }
     })
   } else {
@@ -96,6 +102,7 @@ export async function increaseApiLimit(type: ApiLimitType) {
         chatCount: type === 'chat' ? 1 : 0,
         summaryCount: type === 'summarize' ? 1 : 0,
         codeReviewCount: type === 'codeReview' ? 1 : 0,
+        imageCount: type === 'image' ? 1 : 0,
       }
     })
   }
@@ -118,6 +125,7 @@ export async function getApiLimits() {
       chats: { used: 0, total: MAX_FREE_CHATS },
       summaries: { used: 0, total: MAX_FREE_SUMMARIES },
       reviews: { used: 0, total: MAX_FREE_REVIEWS },
+      images: { used: 0, total: MAX_FREE_IMAGES },
     }
   }
 
@@ -125,5 +133,6 @@ export async function getApiLimits() {
     chats: { used: limit.chatCount, total: MAX_FREE_CHATS },
     summaries: { used: limit.summaryCount, total: MAX_FREE_SUMMARIES },
     reviews: { used: limit.codeReviewCount, total: MAX_FREE_REVIEWS },
+    images: { used: limit.imageCount, total: MAX_FREE_IMAGES },
   }
 }

@@ -1,1 +1,0 @@
-src/app/(dashboard)/ai-chat/page.tsx(3,39): error TS2307: Cannot find module 'ai/react' or its corresponding type declarations.

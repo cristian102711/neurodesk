@@ -20,7 +20,7 @@ export const checkSubscription = async () => {
 
   const isValid =
     dbUser.subscription.mpPaymentId &&
-    dbUser.subscription.mpCurrentPeriodEnd?.getTime()! + DAY_IN_MS > Date.now()
+    (dbUser.subscription.mpCurrentPeriodEnd?.getTime() ?? 0) + DAY_IN_MS > Date.now()
 
   return !!isValid
 }

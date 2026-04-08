@@ -13,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
     return NextResponse.json({ ...limits, isPro })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[/api/limits]', error)
     return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }

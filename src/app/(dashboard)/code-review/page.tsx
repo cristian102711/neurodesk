@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Code2, Terminal, Play, Bug, ShieldCheck, Zap, Loader2, Copy, Check } from 'lucide-react'
+import { toast } from 'react-hot-toast'
 
 export default function CodeReviewPage() {
   const [codeToReview, setCodeToReview] = useState('')
@@ -39,7 +40,7 @@ export default function CodeReviewPage() {
           } else if (json.error) {
             msg = json.error
           }
-        } catch (e) {} // ignore parse error
+        } catch { } // ignore parse error
         setError(msg || 'Error al analizar el código.')
         return
       }
@@ -65,6 +66,7 @@ export default function CodeReviewPage() {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(completion)
     setCopied(true)
+    toast.success('¡Reporte copiado al portapapeles!')
     setTimeout(() => setCopied(false), 2000)
   }
 
