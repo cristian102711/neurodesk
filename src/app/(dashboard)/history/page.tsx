@@ -56,7 +56,7 @@ export default async function HistoryPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4">
-        {generations.map((gen) => (
+        {generations.map((gen: { id: string, type: string, createdAt: Date, prompt: string, result: string }) => (
           <div key={gen.id} className="bg-white/5 border border-white/10 hover:border-gray-500/30 rounded-xl p-5 flex flex-col md:flex-row gap-4 transition-colors relative overflow-hidden group">
             
             <div className="shrink-0 flex items-center justify-center w-12 h-12 bg-black/30 rounded-lg">
